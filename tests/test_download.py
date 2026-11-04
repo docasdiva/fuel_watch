@@ -64,3 +64,24 @@ def test_html_response_raises(tmp_path, monkeypatch):
         download.download_daily(DAY, raw_dir=tmp_path)
 
     assert not download.daily_path(DAY, tmp_path).exists()
+
+
+def test_past_year_is_not_redownloaded(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(download.requests, "get", fake_get(b"PK fake zip", calls))
+
+    download.download_annual(2022, raw_dir=tmp_path)
+    download.download_annual(2022, raw_dir=tmp_path)
+
+    assert calls == ["https://donnees.roulez-eco.fr/opendata/annee/2022"]
+
+
+def test_current_year_is_always_redownloaded(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(download.requests, "get", fake_get(b"PK fake zip", calls))
+    year = date.today().year
+
+    download.download_annual(year, raw_dir=tmp_path)
+    download.download_annual(year, raw_dir=tmp_path)
+
+    assert len(calls) == 2  # le fichier de l'année en cours grossit chaque jour
