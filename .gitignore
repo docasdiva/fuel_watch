@@ -1,0 +1,14 @@
+# Données
+data/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Base locale
+*.duckdb
+*.duckdb.wal
+
+# Secrets
+.env
