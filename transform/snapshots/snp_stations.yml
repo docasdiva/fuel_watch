@@ -1,0 +1,18 @@
+snapshots:
+  - name: snp_stations
+    relation: ref('int_stations_photo')
+    config:
+      schema: snapshots
+      unique_key: station_id
+      strategy: check
+      check_cols:
+        - latitude
+        - longitude
+        - code_postal
+        - type_route
+        - adresse
+        - ville
+        - services
+        - automate_24_24
+      updated_at: photo_le
+      hard_deletes: invalidate

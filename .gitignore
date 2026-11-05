@@ -15,3 +15,10 @@ __pycache__/
 
 # Secrets
 .env
+
+# dbt
+transform/target/
+transform/dbt_packages/
+transform/logs/
+logs/
+transform/.user.yml
