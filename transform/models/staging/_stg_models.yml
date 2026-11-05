@@ -83,3 +83,18 @@ models:
                 values: [route, autoroute]
       - name: date_fichier
         data_tests: [not_null]
+
+  - name: stg_stations_annuel
+    description: Stations présentes dans les archives annuelles, une ligne par station et par année.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [annee, station_id]
+    columns:
+      - name: station_id
+        data_tests: [not_null]
+      - name: type_route
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [route, autoroute]

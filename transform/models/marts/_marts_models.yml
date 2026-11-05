@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: dim_stations
+    description: Une ligne par station ayant existé depuis 2022, avec ses informations les plus récentes.
+    columns:
+      - name: station_id
+        description: Identifiant unique de la station.
+        data_tests: [unique, not_null]
+      - name: est_active
+        description: Vrai si la station figure dans le dernier fichier quotidien.
+        data_tests: [not_null]
