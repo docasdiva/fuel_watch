@@ -3,10 +3,14 @@
 Lancement de l'interface : dagster dev -m fuelwatch.definitions
 """
 from datetime import date
+from pathlib import Path
 
 import dagster as dg
+from dagster_dbt import DbtCliResource, DbtProject, dbt_assets
 
 from fuelwatch.pipeline import run_daily
+
+# ---------- Ingestion ----------
 
 # Une partition par jour. Le site ne garde qu'environ 1 mois de fichiers quotidiens.
 partitions_quotidiennes = dg.DailyPartitionsDefinition(
@@ -14,24 +18,49 @@ partitions_quotidiennes = dg.DailyPartitionsDefinition(
     timezone="Europe/Paris",
 )
 
+# Mêmes noms que les sources dbt (source « raw », tables raw_stations et raw_prix) :
+# Dagster relie ainsi automatiquement l'ingestion aux modèles dbt.
+RAW_STATIONS = dg.AssetKey(["raw", "raw_stations"])
+RAW_PRIX = dg.AssetKey(["raw", "raw_prix"])
 
-@dg.asset(
+
+@dg.multi_asset(
+    specs=[
+        dg.AssetSpec(RAW_STATIONS, group_name="ingestion",
+                     description="Stations du fichier quotidien, dans Databricks."),
+        dg.AssetSpec(RAW_PRIX, group_name="ingestion",
+                     description="Prix du fichier quotidien, dans Databricks."),
+    ],
     partitions_def=partitions_quotidiennes,
-    group_name="ingestion",
     retry_policy=dg.RetryPolicy(max_retries=3, delay=600),
-    description="Fichier quotidien téléchargé, converti en Parquet et chargé dans "
-    "raw_stations et raw_prix (Databricks).",
 )
-def raw_quotidien(context: dg.AssetExecutionContext) -> dg.MaterializeResult:
+def ingestion_quotidienne(context: dg.AssetExecutionContext):
+    """Télécharge le fichier du jour, le convertit en Parquet et le charge dans Databricks."""
     day = date.fromisoformat(context.partition_key)
     counts = run_daily(day)
     context.log.info(f"{day} : {counts}")
-    return dg.MaterializeResult(
-        metadata={
-            "nb_stations": counts["raw_stations"],
-            "nb_prix": counts["raw_prix"],
-        }
-    )
+    yield dg.MaterializeResult(asset_key=RAW_STATIONS,
+                               metadata={"nb_lignes": counts["raw_stations"]})
+    yield dg.MaterializeResult(asset_key=RAW_PRIX,
+                               metadata={"nb_lignes": counts["raw_prix"]})
 
 
-defs = dg.Definitions(assets=[raw_quotidien])
+# ---------- Transformation (dbt) ----------
+
+TRANSFORM_DIR = Path(__file__).resolve().parents[2] / "transform"
+
+dbt_project = DbtProject(project_dir=TRANSFORM_DIR, profiles_dir=TRANSFORM_DIR)
+dbt_project.prepare_if_dev()  # régénère manifest.json quand on lance « dagster dev »
+
+
+@dbt_assets(manifest=dbt_project.manifest_path)
+def fuelwatch_dbt(context: dg.AssetExecutionContext, dbt: DbtCliResource):
+    yield from dbt.cli(["build"], context=context).stream()
+
+
+# ---------- Définitions ----------
+
+defs = dg.Definitions(
+    assets=[ingestion_quotidienne, fuelwatch_dbt],
+    resources={"dbt": DbtCliResource(project_dir=dbt_project)},
+)
