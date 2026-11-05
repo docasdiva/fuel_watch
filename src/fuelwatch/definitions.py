@@ -10,6 +10,7 @@ from typing import Any
 import dagster as dg
 from dagster_dbt import DagsterDbtTranslator, DbtCliResource, DbtProject, dbt_assets
 
+from fuelwatch.alertes import envoyer_alerte
 from fuelwatch.pipeline import run_daily
 
 # ---------- Ingestion ----------
@@ -83,11 +84,40 @@ planning_quotidien = dg.build_schedule_from_partitioned_job(
 )
 
 
+# ---------- Surveillance ----------
+
+# À 10 h, la partition de la veille doit être chargée (planning à 8 h + relances).
+controles_fraicheur = dg.build_time_partition_freshness_checks(
+    assets=[ingestion_quotidienne],
+    deadline_cron="0 10 * * *",
+    timezone="Europe/Paris",
+    severity=dg.AssetCheckSeverity.ERROR,
+)
+
+# Évalue régulièrement les contrôles de fraîcheur.
+capteur_fraicheur = dg.build_sensor_for_freshness_checks(
+    freshness_checks=controles_fraicheur,
+    default_status=dg.DefaultSensorStatus.RUNNING,
+)
+
+
+@dg.run_failure_sensor(default_status=dg.DefaultSensorStatus.RUNNING)
+def alerte_echec(context: dg.RunFailureSensorContext) -> None:
+    """Envoie une alerte dès qu'une exécution échoue."""
+    run = context.dagster_run
+    envoyer_alerte(
+        f"🚨 FuelWatch : l'exécution « {run.job_name} » ({run.run_id[:8]}) a échoué.\n"
+        f"{context.failure_event.message}"
+    )
+
+
 # ---------- Définitions ----------
 
 defs = dg.Definitions(
     assets=[ingestion_quotidienne, fuelwatch_dbt],
+    asset_checks=controles_fraicheur,
     jobs=[job_quotidien],
     schedules=[planning_quotidien],
+    sensors=[capteur_fraicheur, alerte_echec],
     resources={"dbt": DbtCliResource(project_dir=dbt_project)},
 )
