@@ -2,11 +2,13 @@
 
 Lancement de l'interface : dagster dev -m fuelwatch.definitions
 """
+from collections.abc import Mapping
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 import dagster as dg
-from dagster_dbt import DbtCliResource, DbtProject, dbt_assets
+from dagster_dbt import DagsterDbtTranslator, DbtCliResource, DbtProject, dbt_assets
 
 from fuelwatch.pipeline import run_daily
 
@@ -53,14 +55,39 @@ dbt_project = DbtProject(project_dir=TRANSFORM_DIR, profiles_dir=TRANSFORM_DIR)
 dbt_project.prepare_if_dev()  # régénère manifest.json quand on lance « dagster dev »
 
 
-@dbt_assets(manifest=dbt_project.manifest_path)
+class FuelwatchDbtTranslator(DagsterDbtTranslator):
+    """Range tous les modèles dbt dans le groupe « transformation »."""
+
+    def get_group_name(self, dbt_resource_props: Mapping[str, Any]) -> str:
+        return "transformation"
+
+
+@dbt_assets(
+    manifest=dbt_project.manifest_path,
+    dagster_dbt_translator=FuelwatchDbtTranslator(),
+)
 def fuelwatch_dbt(context: dg.AssetExecutionContext, dbt: DbtCliResource):
     yield from dbt.cli(["build"], context=context).stream()
+
+
+# ---------- Planification ----------
+
+# Ingestion de la veille, puis dbt build : tout le graphe en une exécution.
+job_quotidien = dg.define_asset_job("job_quotidien", selection=dg.AssetSelection.all())
+
+# Chaque jour à 8 h (heure de Paris), pour la dernière journée complète.
+planning_quotidien = dg.build_schedule_from_partitioned_job(
+    job_quotidien,
+    hour_of_day=8,
+    default_status=dg.DefaultScheduleStatus.RUNNING,
+)
 
 
 # ---------- Définitions ----------
 
 defs = dg.Definitions(
     assets=[ingestion_quotidienne, fuelwatch_dbt],
+    jobs=[job_quotidien],
+    schedules=[planning_quotidien],
     resources={"dbt": DbtCliResource(project_dir=dbt_project)},
 )

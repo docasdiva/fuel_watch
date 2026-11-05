@@ -22,3 +22,6 @@ transform/dbt_packages/
 transform/logs/
 logs/
 transform/.user.yml
+
+# Dagster
+.tmp_dagster_home_*/
