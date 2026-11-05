@@ -12,6 +12,9 @@ dependencies = [
     "databricks-sdk>=0.30",
     "python-dotenv>=1.0",
     "dbt-databricks>=1.8",
+    "dagster>=1.9",
+    "dagster-webserver>=1.9",
+    "dagster-dbt>=0.25",
 ]
 
 [project.optional-dependencies]
