@@ -1,0 +1,15 @@
+.env
+.git/
+.github/
+.venv/
+.vscode/
+data/
+logs/
+transform/target/
+transform/dbt_packages/
+transform/logs/
+.tmp_dagster_home_*/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/

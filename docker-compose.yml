@@ -1,0 +1,37 @@
+# Lancement de tout le projet : docker compose up
+# Prérequis : un fichier .env rempli (voir .env.example).
+
+x-fuelwatch: &fuelwatch
+  build: .
+  image: fuelwatch:latest
+  env_file:
+    - path: .env
+      required: false
+  restart: unless-stopped
+
+services:
+  dagster-webserver:
+    <<: *fuelwatch
+    command: dagster-webserver -h 0.0.0.0 -p 3000 -m fuelwatch.definitions
+    ports:
+      - "3000:3000"
+    volumes:
+      - dagster_home:/opt/dagster/home
+      - donnees:/app/data
+
+  dagster-daemon:
+    <<: *fuelwatch
+    command: dagster-daemon run -m fuelwatch.definitions
+    volumes:
+      - dagster_home:/opt/dagster/home
+      - donnees:/app/data
+
+  dashboard:
+    <<: *fuelwatch
+    command: streamlit run dashboard/app.py --server.address 0.0.0.0 --server.port 8501
+    ports:
+      - "8501:8501"
+
+volumes:
+  dagster_home: # historique Dagster (exécutions, plannings) conservé entre les redémarrages
+  donnees: # fichiers téléchargés et Parquet

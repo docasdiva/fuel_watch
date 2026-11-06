@@ -40,3 +40,13 @@ jobs:
       - run: pip install -e .
       - run: dbt deps --project-dir transform --profiles-dir transform
       - run: dbt parse --project-dir transform --profiles-dir transform
+
+  docker:
+    name: Image Docker
+    runs-on: ubuntu-latest
+    # Docker n'est pas installé en local : c'est ici que l'image est construite et vérifiée.
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config --quiet
+      - run: docker build -t fuelwatch:latest .
+      - run: docker run --rm fuelwatch:latest dagster definitions validate -m fuelwatch.definitions
