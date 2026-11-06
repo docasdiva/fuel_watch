@@ -1,4 +1,5 @@
 """Téléchargement des fichiers bruts depuis donnees.roulez-eco.fr."""
+
 from datetime import date
 from pathlib import Path
 

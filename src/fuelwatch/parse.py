@@ -1,4 +1,5 @@
 """Parsing des fichiers XML Prix Carburants vers Parquet."""
+
 import zipfile
 from datetime import date, datetime
 from pathlib import Path
@@ -14,24 +15,28 @@ COORD_FACTOR = 100_000  # les coordonnées sont stockées x 100 000
 
 # Schémas explicites : les types ne dépendent pas du contenu du fichier
 # (sinon une colonne entièrement vide serait typée "null").
-STATIONS_SCHEMA = pa.schema([
-    ("station_id", pa.int64()),
-    ("latitude", pa.float64()),
-    ("longitude", pa.float64()),
-    ("code_postal", pa.string()),
-    ("type_route", pa.string()),
-    ("adresse", pa.string()),
-    ("ville", pa.string()),
-    ("services", pa.list_(pa.string())),
-    ("automate_24_24", pa.bool_()),
-])
+STATIONS_SCHEMA = pa.schema(
+    [
+        ("station_id", pa.int64()),
+        ("latitude", pa.float64()),
+        ("longitude", pa.float64()),
+        ("code_postal", pa.string()),
+        ("type_route", pa.string()),
+        ("adresse", pa.string()),
+        ("ville", pa.string()),
+        ("services", pa.list_(pa.string())),
+        ("automate_24_24", pa.bool_()),
+    ]
+)
 
-PRICES_SCHEMA = pa.schema([
-    ("station_id", pa.int64()),
-    ("carburant", pa.string()),
-    ("maj", pa.timestamp("s")),
-    ("prix", pa.float64()),
-])
+PRICES_SCHEMA = pa.schema(
+    [
+        ("station_id", pa.int64()),
+        ("carburant", pa.string()),
+        ("maj", pa.timestamp("s")),
+        ("prix", pa.float64()),
+    ]
+)
 
 
 def _coord(value: str | None) -> float | None:

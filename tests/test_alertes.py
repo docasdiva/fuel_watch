@@ -34,7 +34,8 @@ def test_slack_utilise_la_cle_text(monkeypatch):
 
     monkeypatch.setenv("ALERTE_WEBHOOK_URL", "https://hooks.slack.com/services/x")
     monkeypatch.setattr(
-        alertes.requests, "post",
+        alertes.requests,
+        "post",
         lambda url, json, timeout: envois.append(json) or FausseReponse(),
     )
 

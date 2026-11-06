@@ -4,6 +4,7 @@ Deux familles de tables, car les deux sources n'ont pas le même sens :
 - quotidien : photo de la fin de journée (dernier prix connu)   -> partition date_fichier
 - annuel    : journal de tous les changements de prix de l'année -> partition annee
 """
+
 from datetime import date
 from pathlib import Path
 
@@ -30,6 +31,7 @@ PRIX_COLUMNS = """
     carburant STRING,
     maj TIMESTAMP,
     prix DOUBLE"""
+
 
 def _create_table(name: str, columns: str, partition: str) -> str:
     return (
@@ -99,10 +101,17 @@ def load_daily(day: date) -> dict[str, int]:
     folder, value = daily_volume_dir(day), f"DATE'{day.isoformat()}'"
     with sql_connection() as conn, conn.cursor() as cur:
         return {
-            "raw_stations": _replace(cur, "raw_stations", SELECT_STATIONS, "date_fichier",
-                                     value, f"{folder}/stations.parquet"),
-            "raw_prix": _replace(cur, "raw_prix", SELECT_PRIX, "date_fichier",
-                                 value, f"{folder}/prix.parquet"),
+            "raw_stations": _replace(
+                cur,
+                "raw_stations",
+                SELECT_STATIONS,
+                "date_fichier",
+                value,
+                f"{folder}/stations.parquet",
+            ),
+            "raw_prix": _replace(
+                cur, "raw_prix", SELECT_PRIX, "date_fichier", value, f"{folder}/prix.parquet"
+            ),
         }
 
 
@@ -111,8 +120,15 @@ def load_annual(year: int) -> dict[str, int]:
     folder, value = annual_volume_dir(year), str(int(year))
     with sql_connection() as conn, conn.cursor() as cur:
         return {
-            "raw_stations_annuel": _replace(cur, "raw_stations_annuel", SELECT_STATIONS, "annee",
-                                            value, f"{folder}/stations.parquet"),
-            "raw_prix_annuel": _replace(cur, "raw_prix_annuel", SELECT_PRIX, "annee",
-                                        value, f"{folder}/prix.parquet"),
+            "raw_stations_annuel": _replace(
+                cur,
+                "raw_stations_annuel",
+                SELECT_STATIONS,
+                "annee",
+                value,
+                f"{folder}/stations.parquet",
+            ),
+            "raw_prix_annuel": _replace(
+                cur, "raw_prix_annuel", SELECT_PRIX, "annee", value, f"{folder}/prix.parquet"
+            ),
         }

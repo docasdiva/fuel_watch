@@ -2,6 +2,7 @@
 
 Lancement de l'interface : dagster dev -m fuelwatch.definitions
 """
+
 from collections.abc import Mapping
 from datetime import date
 from pathlib import Path
@@ -29,10 +30,16 @@ RAW_PRIX = dg.AssetKey(["raw", "raw_prix"])
 
 @dg.multi_asset(
     specs=[
-        dg.AssetSpec(RAW_STATIONS, group_name="ingestion",
-                     description="Stations du fichier quotidien, dans Databricks."),
-        dg.AssetSpec(RAW_PRIX, group_name="ingestion",
-                     description="Prix du fichier quotidien, dans Databricks."),
+        dg.AssetSpec(
+            RAW_STATIONS,
+            group_name="ingestion",
+            description="Stations du fichier quotidien, dans Databricks.",
+        ),
+        dg.AssetSpec(
+            RAW_PRIX,
+            group_name="ingestion",
+            description="Prix du fichier quotidien, dans Databricks.",
+        ),
     ],
     partitions_def=partitions_quotidiennes,
     retry_policy=dg.RetryPolicy(max_retries=3, delay=600),
@@ -42,10 +49,10 @@ def ingestion_quotidienne(context: dg.AssetExecutionContext):
     day = date.fromisoformat(context.partition_key)
     counts = run_daily(day)
     context.log.info(f"{day} : {counts}")
-    yield dg.MaterializeResult(asset_key=RAW_STATIONS,
-                               metadata={"nb_lignes": counts["raw_stations"]})
-    yield dg.MaterializeResult(asset_key=RAW_PRIX,
-                               metadata={"nb_lignes": counts["raw_prix"]})
+    yield dg.MaterializeResult(
+        asset_key=RAW_STATIONS, metadata={"nb_lignes": counts["raw_stations"]}
+    )
+    yield dg.MaterializeResult(asset_key=RAW_PRIX, metadata={"nb_lignes": counts["raw_prix"]})
 
 
 # ---------- Transformation (dbt) ----------

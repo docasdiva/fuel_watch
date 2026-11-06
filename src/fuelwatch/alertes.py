@@ -1,4 +1,5 @@
 """Envoi d'alertes vers un webhook Discord ou Slack (URL dans ALERTE_WEBHOOK_URL)."""
+
 import logging
 import os
 

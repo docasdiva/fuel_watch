@@ -19,9 +19,11 @@ class FakeResponse:
 
 def fake_get(content: bytes, calls: list):
     """Fabrique un faux requests.get qui renvoie `content` et note chaque appel."""
+
     def _get(url, timeout):
         calls.append(url)
         return FakeResponse(content)
+
     return _get
 
 

@@ -5,6 +5,7 @@ Utilisation :
     python -m fuelwatch.pipeline 2026-11-03         # une journée précise
     python -m fuelwatch.pipeline backfill 2022 2026 # archives annuelles (années incluses)
 """
+
 import sys
 import time
 from datetime import date, timedelta

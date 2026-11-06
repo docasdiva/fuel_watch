@@ -2,6 +2,7 @@
 
 Utilisation : python -m fuelwatch.dbt debug | build | run | test | source freshness ...
 """
+
 import sys
 from pathlib import Path
 

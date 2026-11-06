@@ -1,4 +1,5 @@
 """Connexion à Databricks (SQL Warehouse + API fichiers), configurée par le fichier .env."""
+
 import os
 
 from databricks import sql
